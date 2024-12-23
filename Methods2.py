@@ -385,7 +385,7 @@ def Diversity(RetrievedSolutions,weights):
             listDiv.append(Div)
     return sum(listDiv) / len(listDiv)
 def SearchSimilarModCNN(UserInput,Descrip,Solut,NumberRetrievals,Weights):
-    #This function searches similar cases to the user input
+    #This function searches similar cases to the user input by searching for closest neighbors in the case base
     InputCase=Description(UserInput,299)
     ListRetrievalsDesc=[]
     ListSim=[]
