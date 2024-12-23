@@ -18,7 +18,7 @@ from numpy.linalg import norm
 import Levenshtein
 import random
 #API for text semantic text similarity
-word2vec_model = api.load("glove-wiki-gigaword-50")
+#word2vec_model = api.load("glove-wiki-gigaword-50")
 
 #Case Base comes from an Excel provided by the supervisor
 path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
@@ -277,11 +277,13 @@ def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
                         ListSim.append(Sim) 
                         break
     return ListRetrievals,ListSim
+
 class Solution:
     def __init__(self,solution,reference):
         self.solution=solution
         self.NestedSolutions=[]
         self.link=reference
+
 class Description:
     def __init__(self,description,reference):
         self.description=description
@@ -384,11 +386,13 @@ def Diversity(RetrievedSolutions,weights):
             Div=1-CompareSimilaritySol(RetrievedSolutions[i],RetrievedSolutions[j],weights)
             listDiv.append(Div)
     return sum(listDiv) / len(listDiv)
+
 def SearchSimilarModCNN(UserInput,Descrip,Solut,NumberRetrievals,Weights):
     #This function searches similar cases to the user input by searching for closest neighbors in the case base
     InputCase=Description(UserInput,299)
     ListRetrievalsDesc=[]
     ListSim=[]
+    #First we compare the user input with the descriptions
     for i in range(0,len(Descrip)-1):
         Sim=CompareSimilarityDesc(InputCase,Descrip[i],Weights)
         if i==0:
@@ -406,10 +410,10 @@ def SearchSimilarModCNN(UserInput,Descrip,Solut,NumberRetrievals,Weights):
                         ListRetrievalsDesc.append(Descrip[i])
                         ListSim.append(Sim) 
                         break
+       
     OrderIndexList= sorted(range(len(ListSim)), key=lambda i: ListSim[i], reverse=True)
     ListRetrievalSol=[]
     for j in OrderIndexList:
-
         LinkSol=ListRetrievalsDesc[j].link
         for k in Solut:
             if k.link==LinkSol:
