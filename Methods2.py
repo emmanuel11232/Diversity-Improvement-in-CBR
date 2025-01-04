@@ -190,6 +190,7 @@ class Similarity:
         a=0
         b=0
         for i in range(0,len(self.TaskList)):
+            #print(self.TaskList[i]==CaseTask1,CaseTask1)
             if self.TaskList[i]==CaseTask1:
                 a=i
             elif self.TaskList[i]==CaseTask2:
@@ -309,12 +310,10 @@ def DescriptionsAndSolutions(CaseBase):
         DescriptionList.append(Desc)
     return SolutionList,DescriptionList
 
-def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc):
+def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc,ThresholdSol=0.7,ThresholdDesc=0.7):
 
     NestedSolutionList=[]
     NestedDescriptionList=[]
-    ThresholdSol=0.7 
-    ThresholdDesc=0.7
     #########################################Generalization of descriptions####################################################
     i=0
     while DescriptionList:
@@ -410,10 +409,10 @@ def SearchSimilarModCNN(UserInput,Descrip,Solut,NumberRetrievals,Weights):
                         ListRetrievalsDesc.append(Descrip[i])
                         ListSim.append(Sim) 
                         break
-       
     OrderIndexList= sorted(range(len(ListSim)), key=lambda i: ListSim[i], reverse=True)
+    Ordered_Debug=sorted(OrderIndexList)
     ListRetrievalSol=[]
-    for j in OrderIndexList:
+    for j in Ordered_Debug:
         LinkSol=ListRetrievalsDesc[j].link
         for k in Solut:
             if k.link==LinkSol:

@@ -60,7 +60,7 @@ def apply_algorithms():
     global shared_data
     
     DescriptionList,SolutionList=DescriptionsAndSolutions(CaseBase)
-    Nested_Descriptions,Nested_Solutions=ModifiedCNN(DescriptionList,SolutionList,[0.05,0.325,0.325,0.05,0.25],[0.35,0.35,0.2,0.05,0.05])
+    Nested_Descriptions,Nested_Solutions=ModifiedCNN(DescriptionList,SolutionList,[0.05,0.325,0.325,0.05,0.25],[0.35,0.35,0.2,0.05,0.05],0.9,0.9)
     
     shared_data['Nested_Descriptions'] = Nested_Descriptions
     shared_data['Nested_Solutions'] = Nested_Solutions
