@@ -20,7 +20,8 @@ import Levenshtein
 #API for text semantic text similarity
 word2vec_model = api.load("glove-wiki-gigaword-50")
 #Case Base comes from an Excel provided by the supervisor
-path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
+# path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
+path = r'/home/dingw/work/CleanedDATA V12-05-2021.csv'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
 
 #Each case will be represented by a structure which will have the solutions, descriptions and performance seperated
@@ -363,7 +364,7 @@ def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc):
                 if SolutionSimilarity>=ThresholdSol:#if it is similar, nest it
                     NestedSolutionList[j].NestedSolutions.append(RandSolution[0])
                 
-                    #Now the description that this one had has to be reindexed
+                    #Now the description that this one had has to be reindexed TODO
                     break
                 if j==(len(NestedSolutionList)-1):
                     if SolutionSimilarity<ThresholdSol:#if it is not similar to anybody it is a GC

@@ -25,7 +25,8 @@ from Methods2 import CasoInd,Diversity,ModifiedCNN,SearchSimilarModCNN, Descript
 from Methods import SearchSimilar
 #First I will set the original case base
 #Case Base comes from an Excel provided by the supervisor
-path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
+# path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
+path = r'/home/dingw/work/CleanedDATA V12-05-2021.csv'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
 
 CaseBase=[]
