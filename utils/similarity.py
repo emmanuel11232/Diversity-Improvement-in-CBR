@@ -6,8 +6,7 @@ from numpy.linalg import norm
 import Levenshtein as LS
 
 
-#Se utiliza esto para definir nuestra similitud con CASOS DE ESTUDIO y TAREAS
-#Porque esas son más subjetivas
+# Description part
 CaseStudyTypeBoard= [[1.  , 0.65, 0.3 , 0.75, 0.1 , 0.1 , 0.7 , 0.1 , 0.1 , 0.2 , 0.1 , 0.7 ],
                         [0.65, 1.  , 0.3 , 0.75, 0.1 , 0.1 , 0.1 , 0.1 , 0.  , 0.2 , 0.75, 0.1 ],
                         [0.3 , 0.3 , 1.  , 0.3 , 0.3 , 0.2 , 0.9 , 0.1 , 0.1 , 0.2 , 0.7 , 0.1 ],
@@ -80,8 +79,7 @@ TaxonomyTree=[ ["Fourier Transform", "Fast Fourier Transform (FFT)", "Wavelet Tr
                     "Gaussian Process Regression (GPR)", "Gaussian Process Functional Regression", "Hidden Markov with Genetic Algorithm", "Dempster-Shafer Theory", 
                     "Probability Approach", "Gaussian Process Regression with Neural Networks (GPRNN)", "Recursive Maximum Likelihood Estimation (RMLE)"]]
 
-
-def Levenshtein(texto1,texto2):
+def sim_leven(texto1,texto2):
     # Calcular la distancia de Levenshtein
     distancia = LS.distance(texto1, texto2)
 
@@ -90,7 +88,7 @@ def Levenshtein(texto1,texto2):
     similitud_levenshtein = 1 - (distancia / longitud_maxima)
     return similitud_levenshtein
 
-def sim_on_offline(texto1,texto2):
+def sim_bin(texto1,texto2):
     return float(texto1 == texto2)
     
 def sim_case_study_type(case1, case2):
@@ -107,24 +105,17 @@ def sim_task(task1, task2):
     j = TaskList.index(task2)
     return TaskBoard[i][j]
 
-#A partir de acá es la comparación para soluciones
-def SimPrePro(Case1,Case2):
-    if Case1.solution[4]==Case2.solution[4]:
-        SimPre=1
-    else:
-        SimPre=0
-    return SimPre
-def SimTaxon(Case1,Case2):
-    Model1=Case1.solution[2]
-    Model2=Case2.solution[2]
+# Solution part
+
+def sim_taxon(model1, model2):
     Dist1=0
     Dist2=0
     Sim=0
     for i in range(0,len(TaxonomyTree)):
         for j in TaxonomyTree[i]:
-            if j==Model1:
+            if j==model1:
                 Dist1=i
-            if j==Model2:
+            if j==model2:
                 Dist2=i
     DistFin=abs(Dist2-Dist1)
     if DistFin>=6:
@@ -135,14 +126,26 @@ def SimTaxon(Case1,Case2):
         Sim=0.8
     return Sim
 
-def GlobalSim(Similarities:list,Weights:list):
-    #SimGlob=math.sqrt(reduce(lambda x, y: x + y, [((num * peso)**2)for num, peso in zip(Similarities, Weights)]))
-        # Verificamos que el número de similitudes coincida con el número de pesos
 
-    # Calcular la similitud global ponderada
-    similitud_global = sum(s * p for s, p in zip(Similarities, Weights))
 
-    #Asegurarse de que la salida esté en el rango de 0 a 1
-    similitud_global = max(0, min(similitud_global, 1))
-
-    return similitud_global
+def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
+    InputCase=CasoInd(UserInput,0,0,"CasoUsuario")
+    ListRetrievals=[]
+    ListSim=[]
+    for i in range(0,len(CaseBase)-1):
+        Sim=CompareSimilarityDesc(InputCase,CaseBase[i],Weights)
+        if i==0:
+            ListRetrievals.append(CaseBase[i])
+        else:
+            if len(ListRetrievals)<NumberRetrievals:
+                    ListRetrievals.append(CaseBase[i])
+                    ListSim.append(Sim)
+            else:
+                 for j in range(0,NumberRetrievals-1): 
+                      if Sim>ListSim[j]:
+                        ListRetrievals.pop(j)
+                        ListSim.pop(j)
+                        ListRetrievals.append(CaseBase[i])
+                        ListSim.append(Sim) 
+                        break
+    return ListRetrievals,ListSim
