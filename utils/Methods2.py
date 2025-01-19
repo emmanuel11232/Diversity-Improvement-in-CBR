@@ -280,6 +280,7 @@ def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
                         break
     return ListRetrievals,ListSim
 
+# TODO
 class Solution:
     def __init__(self,solution,reference):
         self.solution=solution

@@ -125,27 +125,3 @@ def sim_taxon(model1, model2):
     elif DistFin<2:
         Sim=0.8
     return Sim
-
-
-
-def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
-    InputCase=CasoInd(UserInput,0,0,"CasoUsuario")
-    ListRetrievals=[]
-    ListSim=[]
-    for i in range(0,len(CaseBase)-1):
-        Sim=CompareSimilarityDesc(InputCase,CaseBase[i],Weights)
-        if i==0:
-            ListRetrievals.append(CaseBase[i])
-        else:
-            if len(ListRetrievals)<NumberRetrievals:
-                    ListRetrievals.append(CaseBase[i])
-                    ListSim.append(Sim)
-            else:
-                 for j in range(0,NumberRetrievals-1): 
-                      if Sim>ListSim[j]:
-                        ListRetrievals.pop(j)
-                        ListSim.pop(j)
-                        ListRetrievals.append(CaseBase[i])
-                        ListSim.append(Sim) 
-                        break
-    return ListRetrievals,ListSim
