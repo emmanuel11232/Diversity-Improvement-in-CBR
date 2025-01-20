@@ -85,8 +85,6 @@ class CaseBase:
         return _retrieve_topk(query, self.cases, attr_functions, weights, k)
         
 class MCNN_CaseBase(CaseBase):
-
-    # TODO: 1.INIT - Build the CB 2. Retrieve and display results
     
     def __init__(self, cases: List[Case], desc_attrs, sol_attrs, thr_desc: float = 1.0, 
                  thr_sol:float = 1.0, _seed = 0, **kwargs):
@@ -98,12 +96,14 @@ class MCNN_CaseBase(CaseBase):
         self.thr_sol = thr_sol
 
         # Provide deterministic results
+        _cases = cases.copy()
         random.seed(_seed)
         # Shuffle the cases
-        random.shuffle(cases)
+        random.shuffle(_cases)
+        print(_cases)
 
         # Build the MCNN Case Base from a list of cases.
-        for c in cases:
+        for c in _cases:
             # Decompose the cases into description part and solution part.
             desc, sol = c.to_desc_sol_pair(desc_attrs, sol_attrs)
             # Add the descriptions and solutions to the MCNN Case Base.
@@ -116,7 +116,7 @@ class MCNN_CaseBase(CaseBase):
         if len(self.descriptions) == 0:
             self.descriptions.append(desc)
         else:    
-            desc0, sim = self.retrieve_topk(desc, k=1)[0]
+            desc0, sim = self.retrieve_topk_desc(desc, k=1)[0]
             if sim > self.thr_desc:
                 # Generalize descriptions to GC
                 if isinstance(desc0, GC):
@@ -150,7 +150,7 @@ class MCNN_CaseBase(CaseBase):
             else:
                 self.solutions.append(sol)
 
-    def retrieve_topk(self, query: Query, attr_functions: Dict[str, Callable] = None, 
+    def retrieve_topk_desc(self, query: Query, attr_functions: Dict[str, Callable] = None, 
                       weights: List[float] | Dict[str, float] = None, k: int = None) -> List[Tuple[Description, float]]:
         '''Retrieve the top-k most similar descriptions to the query from the case base.
         Args:
@@ -176,3 +176,29 @@ class MCNN_CaseBase(CaseBase):
             attr_functions = self.attr_functions    
         return _retrieve_topk(query, self.solutions, attr_functions, weights, k)
     
+    def retrieve_topk(self, query: Query, attr_functions: Dict[str, Callable] = None,
+                        weights: List[float] | Dict[str, float] = None, k: int = None) -> List[Tuple[BaseCase, float]]:
+            '''Retrieve the top-k most similar cases to the query from the case base.
+            Args:
+                query: The query case.
+                k [optional]: The number of cases to retrieve. If None, return all cases. Default is None.
+            Returns:
+                A list of tuples, each tuple contains a case and its similarity to the query.
+            '''
+            if attr_functions is None:
+                attr_functions = self.attr_functions
+            # Retrieve the top-k most similar descriptions
+            desc_sims = self.retrieve_topk_desc(query, attr_functions, weights, k)
+            # Retrieve the corresponding solutions
+            desc_sol_sims = []
+            for desc, sim in desc_sims:
+                if isinstance(desc, GC):
+                    for sol in sorted(desc.solutions, key=lambda x: x.perf, reverse=True):
+                        desc_sol_sims.append((desc, sol, sim))
+                else:
+                    desc_sol_sims.append((desc, desc.sol, sim))
+                
+                if len(desc_sol_sims) >= k:
+                    break
+
+            return desc_sol_sims[:k]
