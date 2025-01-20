@@ -1,5 +1,6 @@
 from typing import List, Dict, Tuple, Callable
 import pandas as pd
+import random
 from utils.case import BaseCase, Query, Case, Description, GC, Solution
 from utils.sim_func import *
 
@@ -84,19 +85,70 @@ class CaseBase:
         return _retrieve_topk(query, self.cases, attr_functions, weights, k)
         
 class MCNN_CaseBase(CaseBase):
+
+    # TODO: 1.INIT - Build the CB 2. Retrieve and display results
     
-    def __init__(self, thr_desc: float = 1.0, thr_sol:float = 1.0):
-        # super().__init__(cases)
+    def __init__(self, cases: List[Case], desc_attrs, sol_attrs, thr_desc: float = 1.0, 
+                 thr_sol:float = 1.0, _seed = 0, **kwargs):
+        super().__init__(cases, **kwargs)
+
         self.descriptions = []
         self.solutions = []
         self.thr_desc = thr_desc
         self.thr_sol = thr_sol
 
-    # def add_description(self, desc: Description):
-    #     self.descriptions.append(desc)
-    #     # Relink the solution
-    #     if desc.sol is not None:
-    #         self.solutions.append(desc.sol)
+        # Provide deterministic results
+        random.seed(_seed)
+        # Shuffle the cases
+        random.shuffle(cases)
+
+        # Build the MCNN Case Base from a list of cases.
+        for c in cases:
+            # Decompose the cases into description part and solution part.
+            desc, sol = c.to_desc_sol_pair(desc_attrs, sol_attrs)
+            # Add the descriptions and solutions to the MCNN Case Base.
+            self.add_description(desc)
+            self.add_solution(desc.sol)
+
+    
+    def add_description(self, desc: Description):
+
+        if len(self.descriptions) == 0:
+            self.descriptions.append(desc)
+        else:    
+            desc0, sim = self.retrieve_topk(desc, k=1)[0]
+            if sim > self.thr_desc:
+                # Generalize descriptions to GC
+                if isinstance(desc0, GC):
+                    # Add the description to the existing GC
+                    desc0.add_description(desc)
+                else:
+                    # Create a new GC from 2 descriptions
+                    gc = GC(descriptions=[desc0, desc], _id=desc0._id)
+                    # Update the case base
+                    self.descriptions.remove(desc0)
+                    self.descriptions.append(gc)
+            else:
+                self.descriptions.append(desc)
+
+    def add_solution(self, sol: Solution):
+        if len(self.solutions) == 0:
+            self.solutions.append(sol)
+        else:
+            sol0, sim = self.retrieve_topk_sol(sol, k=1)[0]
+            # Generalize solutions
+            if sim > self.thr_sol:
+                if sol0.perf >= sol.perf:
+                    # Become a child of the existing solution
+                    sol0.add_child(sol)
+                else:
+                    # Become the parent of an existing solution
+                    sol.add_child(sol0)
+                    # Update the solution base
+                    self.solutions.remove(sol0)
+                    self.solutions.append(sol)
+            else:
+                self.solutions.append(sol)
 
     def retrieve_topk(self, query: Query, attr_functions: Dict[str, Callable] = None, 
                       weights: List[float] | Dict[str, float] = None, k: int = None) -> List[Tuple[Description, float]]:

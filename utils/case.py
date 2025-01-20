@@ -121,8 +121,20 @@ class Description(BaseCase):
 class GC(Description):
     def __init__(self, descriptions: List[Description], _id=0, **kwargs):
         super().__init__(_id, **kwargs)
-        self.descriptions = descriptions
-        self.solutions = [desc.sol for desc in descriptions if desc.sol is not None]
+        self.descriptions = []
+        self.solutions = []
+        # Relink the descriptions and solutions
+        for desc in descriptions:
+            # solution -> GC
+            if desc.sol is not None:
+                target_sol = desc.sol
+                target_sol.desc.remove(desc)
+                target_sol.desc.append(self)
+                self.solutions.append(target_sol)
+                # desc.sol = None
+            # GC -> solution
+            if desc not in self.descriptions:
+                self.descriptions.append(desc)
         
     def __str__(self):
         return f'GC {self._id}: ' + '{' + ', '.join([str(desc) for desc in self.descriptions]) + '}'
@@ -134,7 +146,15 @@ class GC(Description):
         self.descriptions.append(desc)
         # Relink the solution
         if desc.sol is not None:
-            self.solutions.append(desc.sol)
+            target_sol = desc.sol
+            # GC -> solution
+            if target_sol not in self.solutions:
+                self.solutions.append(target_sol)
+            # solution -> GC
+            target_sol.desc.remove(desc)
+            if self not in target_sol.desc:
+                target_sol.desc.append(self)
+            # desc.sol = None
 
     def cal_sim(self, case: BaseCase, attr_functions: List[float] | Dict[str, float], 
                 weights: List[float] | Dict[str, float]) -> float:
@@ -172,3 +192,27 @@ class Solution(BaseCase):
     def __repr__(self):
         return f'Solution {self._id}'
         
+
+    def add_child(self, child: 'Solution'):
+        '''Add a child solution to the current solution.
+        '''
+        self.children.append(child)
+
+        # Absorb all the children of the child solution
+        self.children += child.children
+        child.children.clear()
+
+        # Relink corresponding descriptions
+        for desc in child.desc:
+            # description -> solution
+            if isinstance(desc, GC):
+                desc.solutions.remove(child)
+                if self not in desc.solutions:
+                    desc.solutions.append(self)
+            else:
+                desc.sol = self
+            # solution -> description
+            if desc not in self.desc:
+                self.desc.append(desc)
+
+        child.desc.clear()
