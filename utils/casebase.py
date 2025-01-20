@@ -100,7 +100,6 @@ class MCNN_CaseBase(CaseBase):
         random.seed(_seed)
         # Shuffle the cases
         random.shuffle(_cases)
-        print(_cases)
 
         # Build the MCNN Case Base from a list of cases.
         for c in _cases:
@@ -177,7 +176,8 @@ class MCNN_CaseBase(CaseBase):
         return _retrieve_topk(query, self.solutions, attr_functions, weights, k)
     
     def retrieve_topk(self, query: Query, attr_functions: Dict[str, Callable] = None,
-                        weights: List[float] | Dict[str, float] = None, k: int = None) -> List[Tuple[BaseCase, float]]:
+                        weights: List[float] | Dict[str, float] = None, k: int = None
+                        ) -> List[Tuple[Tuple[Description, Solution], float]]:
             '''Retrieve the top-k most similar cases to the query from the case base.
             Args:
                 query: The query case.
@@ -194,11 +194,14 @@ class MCNN_CaseBase(CaseBase):
             for desc, sim in desc_sims:
                 if isinstance(desc, GC):
                     for sol in sorted(desc.solutions, key=lambda x: x.perf, reverse=True):
-                        desc_sol_sims.append((desc, sol, sim))
+                        desc_sol_sims.append(((desc, sol), sim))
                 else:
-                    desc_sol_sims.append((desc, desc.sol, sim))
+                    desc_sol_sims.append(((desc, desc.sol), sim))
                 
                 if len(desc_sol_sims) >= k:
                     break
 
             return desc_sol_sims[:k]
+    
+
+# TODO: Implement the other CBM methods

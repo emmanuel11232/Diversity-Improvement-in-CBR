@@ -33,7 +33,37 @@ CaseStudyTypeList=["Rotary machines","Structures","Production lines","Reciprocat
                     "Electromechanical systems","Optical devices","Energy cells and batteries","Unknown Item Type",
                     "Pipelines and ducts","Power transmission device"]
 TaskList=["Health modelling","Fault feature extraction","Fault detection","Fault identification","Health assessment",
-            "One step future state forecast","Multiple steps future state forecast","Remaining useful life estimation"]  
+            "One step future state forecast","Multiple steps future state forecast","Remaining useful life estimation"]
+
+def sim_leven(texto1,texto2):
+    # Calcular la distancia de Levenshtein
+    texto1 = str(texto1)
+    texto2 = str(texto2)
+    distancia = LS.distance(texto1, texto2)
+
+    # Calcular la similitud de Levenshtein (normalizada)
+    longitud_maxima = max(len(texto1), len(texto2))
+    similitud_levenshtein = 1 - (distancia / longitud_maxima)
+    return similitud_levenshtein
+
+def sim_bin(texto1,texto2):
+    return float(texto1 == texto2)
+    
+def sim_case_study_type(case1, case2):
+    assert case1 in CaseStudyTypeList, f"Case Study type {case1} not in CaseStudyTypeList"
+    assert case2 in CaseStudyTypeList, f"Case Study type  {case2} not in CaseStudyTypeList"
+    i = CaseStudyTypeList.index(case1)
+    j = CaseStudyTypeList.index(case2)
+    return CaseStudyTypeBoard[i][i]
+
+def sim_task(task1, task2):
+    assert task1 in TaskList, f"Task1 {task1} not in TaskList"
+    assert task2 in TaskList, f"Task2 {task2} not in TaskList"
+    i = TaskList.index(task1)
+    j = TaskList.index(task2)
+    return TaskBoard[i][j]
+
+# Solution part
 TaxonomyTree=[ ["Fourier Transform", "Fast Fourier Transform (FFT)", "Wavelet Transform", "Spectral Mixture Kernels", 
                 "Multiscale Gaussian Process Regression (SE-MGPR)", "Gaussian Process Functional Regression with Periodic Covariance",
                     "Time Continuous Relevant Isometric Mapping (TRIM)", "Principal Component Analysis (PCA)", 
@@ -79,37 +109,10 @@ TaxonomyTree=[ ["Fourier Transform", "Fast Fourier Transform (FFT)", "Wavelet Tr
                     "Gaussian Process Regression (GPR)", "Gaussian Process Functional Regression", "Hidden Markov with Genetic Algorithm", "Dempster-Shafer Theory", 
                     "Probability Approach", "Gaussian Process Regression with Neural Networks (GPRNN)", "Recursive Maximum Likelihood Estimation (RMLE)"]]
 
-def sim_leven(texto1,texto2):
-    # Calcular la distancia de Levenshtein
-    texto1 = str(texto1)
-    texto2 = str(texto2)
-    distancia = LS.distance(texto1, texto2)
-
-    # Calcular la similitud de Levenshtein (normalizada)
-    longitud_maxima = max(len(texto1), len(texto2))
-    similitud_levenshtein = 1 - (distancia / longitud_maxima)
-    return similitud_levenshtein
-
-def sim_bin(texto1,texto2):
-    return float(texto1 == texto2)
-    
-def sim_case_study_type(case1, case2):
-    assert case1 in CaseStudyTypeList, f"Case Study type {case1} not in CaseStudyTypeList"
-    assert case2 in CaseStudyTypeList, f"Case Study type  {case2} not in CaseStudyTypeList"
-    i = CaseStudyTypeList.index(case1)
-    j = CaseStudyTypeList.index(case2)
-    return CaseStudyTypeBoard[i][i]
-
-def sim_task(task1, task2):
-    assert task1 in TaskList, f"Task1 {task1} not in TaskList"
-    assert task2 in TaskList, f"Task2 {task2} not in TaskList"
-    i = TaskList.index(task1)
-    j = TaskList.index(task2)
-    return TaskBoard[i][j]
-
-# Solution part
-
 def sim_taxon(model1, model2):
+    if model1 == model2:
+        return 1.0
+    
     Dist1=0
     Dist2=0
     Sim=0
