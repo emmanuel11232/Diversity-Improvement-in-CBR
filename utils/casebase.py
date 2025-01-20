@@ -1,10 +1,36 @@
 from typing import List, Dict, Tuple, Callable
 import pandas as pd
-from utils.case import Query, Case
+from utils.case import BaseCase, Query, Case, Description, GC, Solution
 from utils.sim_func import *
 
-class CaseBase:
+def _retrieve_topk(query: Query, candidates: List[BaseCase], attr_functions: Dict[str, Callable], 
+                      weights: List[float] | Dict[str, float] = None, k: int = None) -> List[Tuple[BaseCase, float]]:
+        '''Retrieve the top-k most similar cases to the query from the case base.
+        Args:
+            query: The query case.
+            k [optional]: The number of cases to retrieve. If None, return all cases. Default is None.
+        Returns:
+            A list of tuples, each tuple contains a case and its similarity to the query.
+        '''
+        if len(candidates) == 0:
+            return []
 
+        if weights is None:
+            weights = [1.0]*len(attr_functions)
+            
+        # Calculate the similarity between the query and all cases in the case base
+        sims = []
+        for c in candidates:
+            sim = query.cal_sim(c, attr_functions, weights)
+            sims.append((c, sim))
+        # Sort the cases by similarity
+        sims = sorted(sims, key=lambda x: x[1], reverse=True)
+        if k is None:
+            return sims
+        else:
+            return sims[:k]
+        
+class CaseBase:
     attr_functions = {
                 # Description
                 'Task': sim_task, 'Case study type': sim_case_study_type, 'Case study': sim_leven, 
@@ -52,20 +78,49 @@ class CaseBase:
             k [optional]: The number of cases to retrieve. If None, return all cases. Default is None.
         Returns:
             A list of tuples, each tuple contains a case and its similarity to the query.
+        ''' 
+        if attr_functions is None:
+            attr_functions = self.attr_functions    
+        return _retrieve_topk(query, self.cases, attr_functions, weights, k)
+        
+class MCNN_CaseBase(CaseBase):
+    
+    def __init__(self, thr_desc: float = 1.0, thr_sol:float = 1.0):
+        # super().__init__(cases)
+        self.descriptions = []
+        self.solutions = []
+        self.thr_desc = thr_desc
+        self.thr_sol = thr_sol
+
+    # def add_description(self, desc: Description):
+    #     self.descriptions.append(desc)
+    #     # Relink the solution
+    #     if desc.sol is not None:
+    #         self.solutions.append(desc.sol)
+
+    def retrieve_topk(self, query: Query, attr_functions: Dict[str, Callable] = None, 
+                      weights: List[float] | Dict[str, float] = None, k: int = None) -> List[Tuple[Description, float]]:
+        '''Retrieve the top-k most similar descriptions to the query from the case base.
+        Args:
+            query: The query case.
+            k [optional]: The number of cases to retrieve. If None, return all cases. Default is None.
+        Returns:
+            A list of tuples, each tuple contains a case and its similarity to the query.
         '''
         if attr_functions is None:
-            attr_functions = self.attr_functions
-        if weights is None:
-            weights = [1.0]*len(attr_functions)
-            
-        # Calculate the similarity between the query and all cases in the case base
-        sims = []
-        for c in self.cases:
-            sim = query.cal_sim(c, attr_functions, weights) # TODO
-            sims.append((c, sim))
-        # Sort the cases by similarity
-        sims = sorted(sims, key=lambda x: x[1], reverse=True)
-        if k is None:
-            return sims
-        else:
-            return sims[:k]
+            attr_functions = self.attr_functions    
+        return _retrieve_topk(query, self.descriptions, attr_functions, weights, k)
+    
+    def retrieve_topk_sol(self, query: Query, attr_functions: Dict[str, Callable] = None, 
+                          weights: List[float] | Dict[str, float] = None, k: int = None) -> List[Tuple[Solution, float]]:
+        '''Retrieve the top-k most similar solutions to the query from the case base.
+        Args:
+            query: The query case.
+            k [optional]: The number of cases to retrieve. If None, return all cases. Default is None.
+        Returns:
+            A list of tuples, each tuple contains a case and its similarity to the query.
+        '''
+        if attr_functions is None:
+            attr_functions = self.attr_functions    
+        return _retrieve_topk(query, self.solutions, attr_functions, weights, k)
+    

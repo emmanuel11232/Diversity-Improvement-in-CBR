@@ -81,6 +81,8 @@ TaxonomyTree=[ ["Fourier Transform", "Fast Fourier Transform (FFT)", "Wavelet Tr
 
 def sim_leven(texto1,texto2):
     # Calcular la distancia de Levenshtein
+    texto1 = str(texto1)
+    texto2 = str(texto2)
     distancia = LS.distance(texto1, texto2)
 
     # Calcular la similitud de Levenshtein (normalizada)
