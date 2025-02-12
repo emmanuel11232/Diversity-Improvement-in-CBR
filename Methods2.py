@@ -222,6 +222,8 @@ class Similarity:
             Sim=0.5
         elif DistFin<2:
             Sim=0.8
+        elif DistFin==0:
+            Sim=1
         return Sim
     
     def GlobalSim(self,Similarities:list,Weights:list):
@@ -261,7 +263,7 @@ def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
     InputCase=CasoInd(UserInput,0,0,"CasoUsuario")
     ListRetrievals=[]
     ListSim=[]
-    for i in range(0,len(CaseBase)-1):
+    for i in range(0,len(CaseBase)):
         Sim=CompareSimilarityDesc(InputCase,CaseBase[i],Weights)
         if i==0:
             ListRetrievals.append(CaseBase[i])
@@ -270,7 +272,7 @@ def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
                     ListRetrievals.append(CaseBase[i])
                     ListSim.append(Sim)
             else:
-                 for j in range(0,NumberRetrievals-1): 
+                 for j in range(0,NumberRetrievals): 
                       if Sim>ListSim[j]:
                         ListRetrievals.pop(j)
                         ListSim.pop(j)
@@ -330,10 +332,10 @@ def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc,ThresholdSol
                 
                 if DescriptionSimilarity>=ThresholdDesc:#if it is similar, nest it
                     NestedDescriptionList[j].NestedDescriptions.append(RandDescription[0])
-                    SolutionList[RandDescription[0].link].link=NestedDescriptionList[j].link #Se asume que SolutionList está ordenada
+                    SolutionList[RandDescription[0].link].link=NestedDescriptionList[j].link #I asume that the SolutionList is ordered
                     #Now the solution that this one had has to be reindexed
                     break
-                if j==(len(NestedDescriptionList)-1):
+                if j==(len(NestedDescriptionList)):
                     if DescriptionSimilarity<ThresholdDesc:#if it is not similar to anybody it is a GC
                         NestedDescriptionList.append(RandDescription[0])
     
@@ -355,7 +357,7 @@ def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc,ThresholdSol
                     NestedSolutionList[j].NestedSolutions.append(RandSolution[0])
                     #Now the description that this one had has to be reindexed
                     break
-                if j==(len(NestedSolutionList)-1):
+                if j==(len(NestedSolutionList)):
                     if SolutionSimilarity<ThresholdSol:#if it is not similar to anybody it is a GC
                         NestedSolutionList.append(RandSolution[0])
 
