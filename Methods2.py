@@ -39,7 +39,7 @@ class CasoInd:
 CaseBase=[]
 for i in range(0,len(df)):
     Description=df.loc[i,['Task', 'Case study type', 'Case study', 'Online/Off-line', 'Input for the model']]
-    Solution=df.loc[i,['Model Approach', 'Model Type', 'Models', 'Data Pre-processing', 'Complementary notes', 'Publication identifier,,,,,,,,,,,,,,,,,,']] #Gotta fix this bug
+    Solution=df.loc[i,['Model Approach', 'Model Type', 'Models', 'Data Pre-processing']] #Gotta fix this bug
     Performance=df.loc[i,['Performance indicator', 'Performance', 'Publication Year']]
     case=CasoInd(Description.values,Solution.values,Performance.values,i)
     CaseBase.append(case)
@@ -277,6 +277,7 @@ def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
                         ListSim.append(Sim) 
                         break
     return ListRetrievals,ListSim
+
 class Solution:
     def __init__(self,solution,reference):
         self.solution=solution
@@ -368,13 +369,8 @@ def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc):
     return NestedDescriptionList,NestedSolutionList
 
 def Performance(NestedSolutionList,GenSolution):
-    #Get performance indicator from each one of the nested solutions
-    #Pick the best
-    #return the best solution
-    #This has to be done with a metric and a case base of performance indicators
-    #Because of time I will skip this, leaving this as room for improvement
+    #On progress
     pass
-
 
 def Diversity(RetrievedSolutions,weights):
     #Ill do it taking the average similarity between retrieved solutions
