@@ -22,8 +22,9 @@ import random
 
 #Case Base comes from an Excel provided by the supervisor
 path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
+path_performance = r'"C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\performance_normalized_averaged.csv"'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
-
+df_perf = pd.read_csv(path_performance, sep=',', encoding='windows-1252')
 #Each case will be represented by a structure which will have the solutions, descriptions and performance seperated
 class CasoInd:
     def __init__(self, Description, Solution, Performance,reference):
@@ -39,8 +40,8 @@ class CasoInd:
 CaseBase=[]
 for i in range(0,len(df)):
     Description=df.loc[i,['Task', 'Case study type', 'Case study', 'Online/Off-line', 'Input for the model']]
-    Solution=df.loc[i,['Model Approach', 'Model Type', 'Models', 'Data Pre-processing', 'Complementary notes', 'Publication identifier,,,,,,,,,,,,,,,,,,']] #Gotta fix this bug
-    Performance=df.loc[i,['Performance indicator', 'Performance', 'Publication Year']]
+    Solution=df.loc[i,['Model Approach', 'Model Type', 'Models', 'Data Pre-processing']] #Gotta fix this bug
+    Performance=df_perf.loc[i,['Performance indicator', 'Performance', 'Publication Year', 'Average_Performance']]
     case=CasoInd(Description.values,Solution.values,Performance.values,i)
     CaseBase.append(case)
 
