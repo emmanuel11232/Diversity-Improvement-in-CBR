@@ -372,13 +372,8 @@ def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc,ThresholdSol
     return NestedDescriptionList,NestedSolutionList
 
 def Performance(NestedSolutionList,GenSolution):
-    #Get performance indicator from each one of the nested solutions
-    #Pick the best
-    #return the best solution
-    #This has to be done with a metric and a case base of performance indicators
-    #Because of time I will skip this, leaving this as room for improvement
+    #On progress
     pass
-
 
 def Diversity(RetrievedSolutions,weights):
     #Ill do it taking the average similarity between retrieved solutions
