@@ -138,7 +138,7 @@ for j in range(0,len(Performance)):
     count=count+1
 
 print(Performance)
-Performance.to_excel('Performance_normalized.xlsx', index=False)
+Performance.to_excel('performance_normalized.xlsx', index=False)
 
 #Create average of the values
 average_performance=[]
@@ -156,4 +156,4 @@ for i in range(0,len(Performance)):
 
 Performance['Average_Performance']=average_performance
 print(Performance)
-Performance.to_excel('Performance_normalized_averaged.xlsx', index=False)
+Performance.to_csv('performance_normalized_averaged.csv', index=False)
