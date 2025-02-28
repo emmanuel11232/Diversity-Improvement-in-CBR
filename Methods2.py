@@ -1,29 +1,23 @@
 import pandas as pd
 import numpy as np
-import math
-import sklearn
 import matplotlib.pyplot as plt
 
-import seaborn as sns # librerías para EDA visual
-
 #Nuevo
-from functools import reduce
 from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import OneHotEncoder
-import gensim.downloader as api
 from numpy import dot
 from numpy.linalg import norm
 import Levenshtein
 import random
 #API for text semantic text similarity
-word2vec_model = api.load("glove-wiki-gigaword-50")
+#word2vec_model = api.load("glove-wiki-gigaword-50")
 
 #Case Base comes from an Excel provided by the supervisor
 path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
+path_performance = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\performance_normalized_averaged.csv'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
-
+df_perf = pd.read_csv(path_performance, sep=',', encoding='windows-1252')
 #Each case will be represented by a structure which will have the solutions, descriptions and performance seperated
 class CasoInd:
     def __init__(self, Description, Solution, Performance,reference):
@@ -35,13 +29,30 @@ class CasoInd:
     def __str__(self):
         return f"{self.reference}"
 #Then we create the casebase asigning everything needed
+class Solution:
+    def __init__(self,solution,performance,reference):
+        self.data=solution #initialized
+        self.performance=performance #initialized
+        self.nested_cases=[] #nest_higher_similarity and update_solutions_by_performance
+        self.link=reference
+        self.parent_description=reference #This is only changed when making the performance evaluation
+        self.state=None
+        self.parent=None
+
+class Description:
+    def __init__(self,description,reference):
+        self.data=description
+        self.nested_cases=[]
+        self.link=reference
+        self.state=None
+        self.parent=None
 
 CaseBase=[]
 for i in range(0,len(df)):
-    Description=df.loc[i,['Task', 'Case study type', 'Case study', 'Online/Off-line', 'Input for the model']]
-    Solution=df.loc[i,['Model Approach', 'Model Type', 'Models', 'Data Pre-processing']] #Gotta fix this bug
-    Performance=df.loc[i,['Performance indicator', 'Performance', 'Publication Year']]
-    case=CasoInd(Description.values,Solution.values,Performance.values,i)
+    description=df.loc[i,['Task', 'Case study type', 'Case study', 'Online/Off-line', 'Input for the model']]
+    solution=df.loc[i,['Model Approach', 'Model Type', 'Models', 'Data Pre-processing']] #Gotta fix this bug
+    Performance=df_perf.loc[i,['Average_Performance']]
+    case=CasoInd(description.values,solution.values,Performance.values,i)
     CaseBase.append(case)
 
 class Similarity:
@@ -125,6 +136,7 @@ class Similarity:
                              "Probability Approach", "Gaussian Process Regression with Neural Networks (GPRNN)", "Recursive Maximum Likelihood Estimation (RMLE)"]]
         
     def CosineSimilarity(self,text1,text2):
+        #Not in use, leaving it here for future work
         documents = [text1,text2]
         count_vectorizer = CountVectorizer(stop_words="english")
         count_vectorizer = CountVectorizer()
@@ -135,35 +147,36 @@ class Similarity:
             columns=count_vectorizer.get_feature_names_out(),
             )
         return cosine_similarity(df, df)
-    # Función para obtener el embedding promedio de una oración
+
     def sentence_embedding(self,texto, model):
+        #Not in use, leaving it here for future work
         if len(texto) == 1 and texto[0] in model:
-            return model[texto[0]]  # Retorna directamente el vector de la palabra
+            return model[texto[0]]  
         else:
             vector = [model[word] for word in texto if word in model]
             return sum(vector) / len(vector) if len(vector) > 0 else [0] * 50
     
     def SimSemantic(self,texto1,texto2,model):
+        #Not in use, leaving it here for future work
         texto1 = texto1.split()
         texto2 = texto2.split()
 
-        # Obtener los embeddings promedio de los dos textos
         embedding1 = self.sentence_embedding(texto1, model)
         embedding2 = self.sentence_embedding(texto2, model)
 
-        # Calcular la similitud coseno entre los embeddings
         similarity = dot(embedding1, embedding2) / (norm(embedding1) * norm(embedding2))
         return similarity
     
     def Levenshtein(self,texto1,texto2):
         # Calcular la distancia de Levenshtein
         distancia = Levenshtein.distance(texto1, texto2)
-
+        
         # Calcular la similitud de Levenshtein (normalizada)
         longitud_maxima = max(len(texto1), len(texto2))
+        if longitud_maxima == 0:
+            return 1.0 
         similitud_levenshtein = 1 - (distancia / longitud_maxima)
         return similitud_levenshtein
-
 
     def On_Offline(self,texto1,texto2):
         if texto1==texto2:
@@ -173,8 +186,9 @@ class Similarity:
         return Sim
         
     def SimCaseStudyType(self,Case1,Case2):
-        CaseStudy1=Case1.description[1]
-        CaseStudy2=Case2.description[1]
+        #Table based similarity
+        CaseStudy1=Case1[1]
+        CaseStudy2=Case2[1]
         a=0
         b=0
         for i in range(0,len(self.CaseStudyTypeList)):
@@ -185,8 +199,9 @@ class Similarity:
         return self.CaseStudyTypeBoard[a][b]
     
     def SimTask(self,Case1,Case2):
-        CaseTask1=Case1.description[0]
-        CaseTask2=Case2.description[0]
+        #Table based similarity
+        CaseTask1=Case1[0]
+        CaseTask2=Case2[0]
         a=0
         b=0
         for i in range(0,len(self.TaskList)):
@@ -197,14 +212,15 @@ class Similarity:
         return self.TaskBoard[a][b]
     #A partir de acá es la comparación para soluciones
     def SimPrePro(self,Case1,Case2):
-        if Case1.solution[4]==Case2.solution[4]:
+        if Case1[3]==Case2[3]:
             SimPre=1
         else:
             SimPre=0
         return SimPre
+    
     def SimTaxon(self,Case1,Case2):
-        Model1=Case1.solution[2]
-        Model2=Case2.solution[2]
+        Model1=Case1[2]
+        Model2=Case2[2]
         Dist1=0
         Dist2=0
         Sim=0
@@ -221,197 +237,46 @@ class Similarity:
             Sim=0.5
         elif DistFin<2:
             Sim=0.8
+        elif DistFin==0:
+            Sim=1
         return Sim
     
     def GlobalSim(self,Similarities:list,Weights:list):
-        #SimGlob=math.sqrt(reduce(lambda x, y: x + y, [((num * peso)**2)for num, peso in zip(Similarities, Weights)]))
-            # Verificamos que el número de similitudes coincida con el número de pesos
-    
         # Calcular la similitud global ponderada
         similitud_global = sum(s * p for s, p in zip(Similarities, Weights))
     
-        #Asegurarse de que la salida esté en el rango de 0 a 1
+        #Doubts on this part
         similitud_global = max(0, min(similitud_global, 1))
     
         return similitud_global
 
-def CompareSimilarityDesc(Sol1,Sol2,Weights):
-    #Gives the similarity for two given cases
+def CompareSimilarity(Sol1,Sol2,Weights,des_sol):
+    #Returns the similarity for two given descriptions
     Sim=Similarity()
-    Sim1=Sim.SimTask(Sol1,Sol2)
-    Sim2=Sim.SimCaseStudyType(Sol1,Sol2)
-    Sim3=Sim.Levenshtein(Sol1.description[2],Sol2.description[2])#Case Study
-    Sim4=Sim.On_Offline(Sol1.description[3],Sol2.description[3])
-    Sim5=Sim.Levenshtein(Sol1.description[4],Sol2.description[4]) #Input for the model
-    SimGlobal=Sim.GlobalSim([Sim1,Sim2,Sim3,Sim4,Sim5],Weights)    
-    return SimGlobal
-
-def CompareSimilaritySol(Sol1,Sol2,Weights):
-    Sim=Similarity()
-    Sim1=Sim.SimPrePro(Sol1,Sol2)#Data PreProcessing
-    Sim2=Sim.Levenshtein(Sol1.solution[0],Sol2.solution[0])#Model Approach
-    Sim3=Sim.Levenshtein(Sol1.solution[2],Sol2.solution[2])#Model Type
-    Sim4=Sim.SimTaxon(Sol1,Sol2)#Model
-    SimGlobal=Sim.GlobalSim([Sim1,Sim2,Sim3,Sim4],Weights)#Global Sim
-    return SimGlobal
-
-
-def SearchSimilar(UserInput,CaseBase,NumberRetrievals,Weights):
-    InputCase=CasoInd(UserInput,0,0,"CasoUsuario")
-    ListRetrievals=[]
-    ListSim=[]
-    for i in range(0,len(CaseBase)-1):
-        Sim=CompareSimilarityDesc(InputCase,CaseBase[i],Weights)
-        if i==0:
-            ListRetrievals.append(CaseBase[i])
-        else:
-            if len(ListRetrievals)<NumberRetrievals:
-                    ListRetrievals.append(CaseBase[i])
-                    ListSim.append(Sim)
-            else:
-                 for j in range(0,NumberRetrievals-1): 
-                      if Sim>ListSim[j]:
-                        ListRetrievals.pop(j)
-                        ListSim.pop(j)
-                        ListRetrievals.append(CaseBase[i])
-                        ListSim.append(Sim) 
-                        break
-    return ListRetrievals,ListSim
-
-class Solution:
-    def __init__(self,solution,reference):
-        self.solution=solution
-        self.NestedSolutions=[]
-        self.link=reference
-class Description:
-    def __init__(self,description,reference):
-        self.description=description
-        self.NestedDescriptions=[]
-        self.link=reference
-
-def quicksort_objetos(Lista):
-    if len(Lista) <= 1:
-        return Lista
+    if des_sol=="description":
+        Sim1=Sim.SimTask(Sol1,Sol2)
+        Sim2=Sim.SimCaseStudyType(Sol1,Sol2)
+        Sim3=Sim.Levenshtein(Sol1[2],Sol2[2])#Case Study
+        Sim4=Sim.On_Offline(Sol1[3],Sol2[3])
+        Sim5=Sim.Levenshtein(Sol1[4],Sol2[4]) #Input for the model
+        SimGlobal=Sim.GlobalSim([Sim1,Sim2,Sim3,Sim4,Sim5],Weights)  
+    elif des_sol=="solution":
+        Sim1=Sim.SimPrePro(Sol1,Sol2)#Data PreProcessing
+        Sim2=Sim.Levenshtein(Sol1[0],Sol2[0])#Model Approach
+        Sim3=Sim.Levenshtein(Sol1[2],Sol2[2])#Model Type
+        Sim4=Sim.SimTaxon(Sol1,Sol2)#Model
+        SimGlobal=Sim.GlobalSim([Sim1,Sim2,Sim3,Sim4],Weights)#Global Sim
     else:
-        pivote = Lista[0]  # Elegimos el primer objeto como pivote
-        menores = [obj for obj in Lista[1:] if obj.link <= pivote.link]  # Objetos con link menor o igual al pivote
-        mayores = [obj for obj in Lista[1:] if obj.link > pivote.link]   # Objetos con link mayor al pivote
-        return quicksort_objetos(menores) + [pivote] + quicksort_objetos(mayores)
-    
+        raise Exception("Specify if the function is for description or solutions")
+
+    return SimGlobal
+
 def DescriptionsAndSolutions(CaseBase):
     SolutionList=[]
     DescriptionList=[]
     for i in CaseBase:
-        Sol=Solution(i.solution,i.reference)
+        Sol=Solution(i.solution,i.performance,i.reference)
         Desc=Description(i.description,i.reference)
         SolutionList.append(Sol)
         DescriptionList.append(Desc)
     return SolutionList,DescriptionList
-
-def ModifiedCNN(SolutionList,DescriptionList,WeightsSol,WeightsDesc):
-
-    NestedSolutionList=[]
-    NestedDescriptionList=[]
-    ThresholdSol=0.7 
-    ThresholdDesc=0.7
-    #########################################Generalization of descriptions####################################################
-    i=0
-    while DescriptionList:
-        if i==0:
-            RandDescription = random.sample(DescriptionList, 1)
-            NestedDescriptionList.append(RandDescription[0])
-            DescriptionList=[obj for obj in DescriptionList if obj not in RandDescription]
-            i+=1
-        else:
-            RandDescription = random.sample(DescriptionList, 1)
-            DescriptionList=[obj for obj in DescriptionList if obj not in RandDescription]
-            for j in range(0,len(NestedDescriptionList)):#Compare Similarity with the rest of the descriptions
-                DescriptionSimilarity=CompareSimilarityDesc(NestedDescriptionList[j],RandDescription[0],WeightsDesc)
-                
-                if DescriptionSimilarity>=ThresholdDesc:#if it is similar, nest it
-                    NestedDescriptionList[j].NestedDescriptions.append(RandDescription[0])
-                    SolutionList[RandDescription[0].link].link=NestedDescriptionList[j].link #Se asume que SolutionList está ordenada
-                    #Now the solution that this one had has to be reindexed
-                    break
-                if j==(len(NestedDescriptionList)-1):
-                    if DescriptionSimilarity<ThresholdDesc:#if it is not similar to anybody it is a GC
-                        NestedDescriptionList.append(RandDescription[0])
-    
-
-    ##########################################Generalization of solutions###################################################
-    i=0
-    while SolutionList:
-        if i==0:
-            RandSolution = random.sample(SolutionList, 1)
-            NestedSolutionList.append(RandSolution[0])
-            SolutionList=[obj for obj in SolutionList if obj not in RandSolution]
-            i+=1
-        else:
-            RandSolution = random.sample(SolutionList, 1)
-            SolutionList=[obj for obj in SolutionList if obj not in RandSolution]
-            for j in range(0,len(NestedSolutionList)):#Compare Similarity with the rest of the solutions
-                SolutionSimilarity=CompareSimilaritySol(NestedSolutionList[j],RandSolution[0],WeightsSol)
-                if SolutionSimilarity>=ThresholdSol:#if it is similar, nest it
-                    NestedSolutionList[j].NestedSolutions.append(RandSolution[0])
-                    #Now the description that this one had has to be reindexed
-                    break
-                if j==(len(NestedSolutionList)-1):
-                    if SolutionSimilarity<ThresholdSol:#if it is not similar to anybody it is a GC
-                        NestedSolutionList.append(RandSolution[0])
-
-    #################################Process of reindexation and re-arraging of solutions###################################
-    #First re-arrange the solutions
-    """for k in range(0,len(NestedSolutionList)):
-        if len(NestedSolutionList[k].NestedSolution)>=1:"""
-            #The solution returned by checking the performance
-            #Will be the GC and nest the other solutions to it
-            #Check the descriptions that have
-    return NestedDescriptionList,NestedSolutionList
-
-def Performance(NestedSolutionList,GenSolution):
-    #On progress
-    pass
-
-def Diversity(RetrievedSolutions,weights):
-    #Ill do it taking the average similarity between retrieved solutions
-    listDiv=[]
-    for i in range(0,len(RetrievedSolutions)-1):
-        for j in range(i+1,len(RetrievedSolutions)):
-            Div=1-CompareSimilaritySol(RetrievedSolutions[i],RetrievedSolutions[j],weights)
-            listDiv.append(Div)
-    return sum(listDiv) / len(listDiv)
-def SearchSimilarModCNN(UserInput,Descrip,Solut,NumberRetrievals,Weights):
-    #This function searches similar cases to the user input by searching for closest neighbors in the case base
-    InputCase=Description(UserInput,299)
-    ListRetrievalsDesc=[]
-    ListSim=[]
-    for i in range(0,len(Descrip)-1):
-        Sim=CompareSimilarityDesc(InputCase,Descrip[i],Weights)
-        if i==0:
-            ListRetrievalsDesc.append(Descrip[i])
-            ListSim.append(Sim)
-        else:
-            if len(ListRetrievalsDesc)<NumberRetrievals:
-                    ListRetrievalsDesc.append(Descrip[i])
-                    ListSim.append(Sim)
-            else:
-                 for j in range(0,NumberRetrievals-1): 
-                      if Sim>ListSim[j]:
-                        ListRetrievalsDesc.pop(j)
-                        ListSim.pop(j)
-                        ListRetrievalsDesc.append(Descrip[i])
-                        ListSim.append(Sim) 
-                        break
-    OrderIndexList= sorted(range(len(ListSim)), key=lambda i: ListSim[i], reverse=True)
-    ListRetrievalSol=[]
-    for j in OrderIndexList:
-
-        LinkSol=ListRetrievalsDesc[j].link
-        for k in Solut:
-            if k.link==LinkSol:
-                ListRetrievalSol.append(k)
-        if len(ListRetrievalSol)>NumberRetrievals:
-            ListRetrievalSol=[ListRetrievalSol[0],ListRetrievalSol[1],ListRetrievalSol[2],ListRetrievalSol[3],ListRetrievalSol[4]]
-            break
-    return ListRetrievalSol
-

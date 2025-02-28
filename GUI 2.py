@@ -54,20 +54,43 @@ for i, label_text in enumerate(labels_input):
 label_resultado = ctk.CTkLabel(app, text="")
 label_resultado.pack(pady=30)
 # Función para guardar los valores de los dropdowns y los pesos
+shared_data = {}
+
+def apply_algorithms():
+    global shared_data
+    
+    DescriptionList,SolutionList=DescriptionsAndSolutions(CaseBase)
+    Nested_Descriptions,Nested_Solutions=ModifiedCNN(DescriptionList,SolutionList,[0.05,0.325,0.325,0.05,0.25],[0.35,0.35,0.2,0.05,0.05],0.9,0.9)
+    
+    shared_data['Nested_Descriptions'] = Nested_Descriptions
+    shared_data['Nested_Solutions'] = Nested_Solutions
+
+
+
 def save_data():
+    global shared_data
+
     values = [dropdown.get() for dropdown in dropdowns]  # Obtener los valores de los dropdowns
     weights = [weight.get() for weight in weight_entries]  # Obtener los valores de los pesos
     weights=[eval(i) for i in weights]
-    
-    DescriptionList,SolutionList=DescriptionsAndSolutions(CaseBase)
-    Nested_Descriptions,Nested_Solutions=ModifiedCNN(DescriptionList,SolutionList,[0.05,0.325,0.325,0.05,0.25],[0.35,0.35,0.2,0.05,0.05])
+
+    Nested_Descriptions = shared_data.get('Nested_Descriptions', [])
+    Nested_Solutions = shared_data.get('Nested_Solutions', [])
+ 
     Weights= [0.2, 0.2, 0.2, 0.2, 0.2]
     NumberRetrievals=5
+
     ListRetrievals=SearchSimilarModCNN(values,Nested_Descriptions,Nested_Solutions,NumberRetrievals,Weights)
+
+    for i in range(len(ListRetrievals)):
+        print(f"Solución {i} : ", ListRetrievals[i].solution,"\n")
+
     # Función para mostrar la información de los objetos en la GUI
     Div=Diversity(ListRetrievals,Weights)
     print("Diversidad de soluciones:", Div)
     print(len(Nested_Descriptions),len(Nested_Solutions))
+
+    label_resultado.configure(text="")
     info_texto = ""
     for obj in ListRetrievals:
         info_texto += f"Solucion: {obj.solution}\n"
@@ -79,6 +102,10 @@ def save_data():
 # Crear un botón para guardar los datos
 save_button = ctk.CTkButton(app, text="Submit Query", command=save_data)
 save_button.pack(pady=10)
+
+Apply_button = ctk.CTkButton(app, text="Apply Algorithm", command=apply_algorithms)
+Apply_button.pack(pady=14)
+
 
 # Ejecutar la aplicación
 app.mainloop()
