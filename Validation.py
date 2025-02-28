@@ -52,56 +52,36 @@ def retrieval_for_ModCNN(solutions,descriptions,query):
 
 diversity_matrix = []
 
-Thresholds=[0.65,0.7,0.8,0.9,0.95]
+# Thresholds (θ_sol and θ_des)
+sol_thresholds = [0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0 ]
+des_thresholds = [ 1.0, 0.98, 0.96, 0.94, 0.92, 0.9, 0.85, 0.8]
+
+diversity_results = {sol: [] for sol in sol_thresholds}
 print("start")
-for i in Thresholds:
-    row_values = []
-    for j in Thresholds:
-        solutions_condensed,descriptions_condensed=apply_CNN(i,j)
+for sol in sol_thresholds:
+    for des in des_thresholds:
+        solutions_condensed,descriptions_condensed=apply_CNN(sol, des)
         shared_data['Diversity_local']=[]
         for case in CaseBase_Test:
             query=Description(case.description,1)
             diversity=retrieval_for_ModCNN(solutions_condensed,descriptions_condensed,query)
             shared_data['Diversity_local'].append(diversity)
-        shared_data['Diversity_average'].append(statistics.mean(shared_data['Diversity_local']))
-        row_values.append(statistics.mean(shared_data['Diversity_local']))  # Store in matrix
-        
-    diversity_matrix.append(row_values)  # Add row to matrix
+        avg_diversity = statistics.mean(shared_data['Diversity_local'])
+        shared_data['Diversity_average'].append(avg_diversity)
+        diversity_results[sol].append(avg_diversity)
 
 
-def plot_diversity():
-    global shared_data
-    Thresholds=[0.65,0.7,0.8,0.9,0.95]
-    Divs=shared_data.get('Diversity_local', [])
-    Divs_average=shared_data.get('Diversity_average', [])
-    plt.plot(Thresholds,Divs_average)
-    plt.title('Diversity')
-    plt.xlabel('Threshold')
-    plt.ylabel('Diversity')
-    plt.show()
-    print(f"Average Diversity: {Divs_average}")
+plt.figure(figsize=(10, 6))
 
+for sol, diversities in diversity_results.items():
+    plt.plot(des_thresholds, diversities, marker='o', label=f'θ_sol = {sol}')
 
-# Convert to NumPy array
-diversity_matrix = np.array(diversity_matrix)
+# Labels and title
+plt.xlabel("Description generalization threshold θ_des")
+plt.ylabel("Diversity")
+plt.title("Diversity vs. Description Generalization Threshold")
+plt.legend()
+plt.grid(True)
 
-# 🔹 Plot heatmap
-plt.figure(figsize=(8, 6))
-plt.imshow(diversity_matrix, cmap='coolwarm', interpolation='nearest')
-
-# Add color bar
-plt.colorbar(label='Diversity')
-
-# Label axes
-plt.xticks(range(len(Thresholds)), Thresholds)
-plt.yticks(range(len(Thresholds)), Thresholds)
-plt.xlabel("Threshold descriptions")
-plt.ylabel("Threshold solutions")
-plt.title("Diversity Heatmap for Different Thresholds")
-
-# Show values in cells
-for i in range(len(Thresholds)):
-    for j in range(len(Thresholds)):
-        plt.text(j, i, f"{diversity_matrix[i, j]:.2f}", ha='center', va='center', color='black')
-
+# Show plot
 plt.show()
