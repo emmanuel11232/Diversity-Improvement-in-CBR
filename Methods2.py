@@ -15,7 +15,7 @@ import random
 
 #Case Base comes from an Excel provided by the supervisor
 path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
-path_performance = r'"C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\performance_normalized_averaged.csv"'
+path_performance = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\performance_normalized_averaged.csv'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
 df_perf = pd.read_csv(path_performance, sep=',', encoding='windows-1252')
 #Each case will be represented by a structure which will have the solutions, descriptions and performance seperated
@@ -31,11 +31,11 @@ class CasoInd:
 #Then we create the casebase asigning everything needed
 class Solution:
     def __init__(self,solution,performance,reference):
-        self.data=solution
-        self.performance=performance
-        self.nested_cases=[]
+        self.data=solution #initialized
+        self.performance=performance #initialized
+        self.nested_cases=[] #nest_higher_similarity and update_solutions_by_performance
         self.link=reference
-        self.parent_description=reference
+        self.parent_description=reference #This is only changed when making the performance evaluation
         self.state=None
         self.parent=None
 
@@ -136,6 +136,7 @@ class Similarity:
                              "Probability Approach", "Gaussian Process Regression with Neural Networks (GPRNN)", "Recursive Maximum Likelihood Estimation (RMLE)"]]
         
     def CosineSimilarity(self,text1,text2):
+        #Not in use, leaving it here for future work
         documents = [text1,text2]
         count_vectorizer = CountVectorizer(stop_words="english")
         count_vectorizer = CountVectorizer()
@@ -146,23 +147,23 @@ class Similarity:
             columns=count_vectorizer.get_feature_names_out(),
             )
         return cosine_similarity(df, df)
-    # Función para obtener el embedding promedio de una oración
+
     def sentence_embedding(self,texto, model):
+        #Not in use, leaving it here for future work
         if len(texto) == 1 and texto[0] in model:
-            return model[texto[0]]  # Retorna directamente el vector de la palabra
+            return model[texto[0]]  
         else:
             vector = [model[word] for word in texto if word in model]
             return sum(vector) / len(vector) if len(vector) > 0 else [0] * 50
     
     def SimSemantic(self,texto1,texto2,model):
+        #Not in use, leaving it here for future work
         texto1 = texto1.split()
         texto2 = texto2.split()
 
-        # Obtener los embeddings promedio de los dos textos
         embedding1 = self.sentence_embedding(texto1, model)
         embedding2 = self.sentence_embedding(texto2, model)
 
-        # Calcular la similitud coseno entre los embeddings
         similarity = dot(embedding1, embedding2) / (norm(embedding1) * norm(embedding2))
         return similarity
     
@@ -186,8 +187,8 @@ class Similarity:
         
     def SimCaseStudyType(self,Case1,Case2):
         #Table based similarity
-        CaseStudy1=Case1.description[1]
-        CaseStudy2=Case2.description[1]
+        CaseStudy1=Case1[1]
+        CaseStudy2=Case2[1]
         a=0
         b=0
         for i in range(0,len(self.CaseStudyTypeList)):
@@ -199,8 +200,8 @@ class Similarity:
     
     def SimTask(self,Case1,Case2):
         #Table based similarity
-        CaseTask1=Case1.description[0]
-        CaseTask2=Case2.description[0]
+        CaseTask1=Case1[0]
+        CaseTask2=Case2[0]
         a=0
         b=0
         for i in range(0,len(self.TaskList)):
@@ -211,15 +212,15 @@ class Similarity:
         return self.TaskBoard[a][b]
     #A partir de acá es la comparación para soluciones
     def SimPrePro(self,Case1,Case2):
-        if Case1.solution[4]==Case2.solution[4]:
+        if Case1[3]==Case2[3]:
             SimPre=1
         else:
             SimPre=0
         return SimPre
     
     def SimTaxon(self,Case1,Case2):
-        Model1=Case1.solution[2]
-        Model2=Case2.solution[2]
+        Model1=Case1[2]
+        Model2=Case2[2]
         Dist1=0
         Dist2=0
         Sim=0
@@ -255,14 +256,14 @@ def CompareSimilarity(Sol1,Sol2,Weights,des_sol):
     if des_sol=="description":
         Sim1=Sim.SimTask(Sol1,Sol2)
         Sim2=Sim.SimCaseStudyType(Sol1,Sol2)
-        Sim3=Sim.Levenshtein(Sol1.description[2],Sol2.description[2])#Case Study
-        Sim4=Sim.On_Offline(Sol1.description[3],Sol2.description[3])
-        Sim5=Sim.Levenshtein(Sol1.description[4],Sol2.description[4]) #Input for the model
+        Sim3=Sim.Levenshtein(Sol1[2],Sol2[2])#Case Study
+        Sim4=Sim.On_Offline(Sol1[3],Sol2[3])
+        Sim5=Sim.Levenshtein(Sol1[4],Sol2[4]) #Input for the model
         SimGlobal=Sim.GlobalSim([Sim1,Sim2,Sim3,Sim4,Sim5],Weights)  
     elif des_sol=="solution":
         Sim1=Sim.SimPrePro(Sol1,Sol2)#Data PreProcessing
-        Sim2=Sim.Levenshtein(Sol1.solution[0],Sol2.solution[0])#Model Approach
-        Sim3=Sim.Levenshtein(Sol1.solution[2],Sol2.solution[2])#Model Type
+        Sim2=Sim.Levenshtein(Sol1[0],Sol2[0])#Model Approach
+        Sim3=Sim.Levenshtein(Sol1[2],Sol2[2])#Model Type
         Sim4=Sim.SimTaxon(Sol1,Sol2)#Model
         SimGlobal=Sim.GlobalSim([Sim1,Sim2,Sim3,Sim4],Weights)#Global Sim
     else:

@@ -7,21 +7,19 @@ class Mod_CNN:
         self.dataset_objects=cases #List of descriptions or solutions from the original dataset
         self.store=[] #List of descriptions or solutions to generalize/generalized
     
-    def random_sample(self,des_sol:str):
+    def random_sample(self):
         #Take one random sample from the dataset
+        #Removes it from the original dataset, since it shouldn't be repeated
         random_index=random.randint(0,len(self.dataset_objects)-1)
-        if des_sol=="description":
-            return self.dataset_objects[random_index]
-        elif des_sol=="solution":
-            return self.dataset_objects[random_index]
-        else:
-            raise Exception("Specify if the function is for description or solutions")
+        random_sample=self.dataset_objects[random_index]
+        self.dataset_objects.pop(random_index)
+        return random_sample
 
-    def add_parent(self,store,sample):
+    def add_parent(self,sample):
         #Add a sample to store
         sample.state="parent"
-        store.append(sample)
-        return store
+        self.store.append(sample)
+        return self.store
 
     def compute_similarity_store_vs_sample(self,sample,des_sol:str,weights):
         #Compute similarity with all GCs and descriptions in store
@@ -29,14 +27,14 @@ class Mod_CNN:
         similarities=[]
         #Go over GCs and take similarities
         for generalized_case in self.store:
-            similarities.append(tuple(generalized_case.link,CompareSimilarity(generalized_case.data,sample,weights,des_sol)))
+            similarities.append((generalized_case.link,CompareSimilarity(generalized_case.data,sample.data,weights,des_sol)))
             #if GC has nested cases take similarity from nested cases too
             if len(generalized_case.nested_cases)>0:
                 for nested in generalized_case.nested_cases:
-                    similarities.append(tuple(nested.link,CompareSimilarity(nested.data,sample,weights,des_sol)))
+                    similarities.append((nested.link,CompareSimilarity(nested.data,sample.data,weights,des_sol)))
         return similarities
     
-    def sort(list_unsorted):
+    def sort(self,list_unsorted):
         #Helper function to sort the similarities from higher to lower
         sorted_list = sorted(list_unsorted, key=lambda x: x[1], reverse=True)
         return sorted_list
@@ -68,7 +66,7 @@ class Mod_CNN:
     def update_store_parents(self,parent):
         #Updates the GCs on store
         for generalized_case in range(0,len(self.store)):
-            if generalized_case.link==parent.link:
+            if self.store[generalized_case].link==parent.link:
                 self.store[generalized_case]=parent
     
     def remove_with_id(self,id):
@@ -90,10 +88,12 @@ class Mod_CNN:
         if higher_similarity_case.state == "child":
             parent=self.search_parent_from_child_reference(sorted_similarities[0][0])
             sample.state="child"
+            sample.parent=parent.link
             parent.nested_cases.append(sample)
             self.update_store_parents(parent)
         elif higher_similarity_case.state == "parent":
             sample.state="child"
+            sample.parent=higher_similarity_case.link
             higher_similarity_case.nested_cases.append(sample)
             self.update_store_parents(higher_similarity_case)
         else:
@@ -102,21 +102,22 @@ class Mod_CNN:
     def assign_child_solutions_to_parent_descriptions(self,solutions):
         #Reassign solutions from child descriptions to parent descriptions
         #Function for description object and receives the solutions store
-        for generalized_solutions in solutions:
+        for generalized_solutions in range(0,len(solutions)):
             #for parent solution
-            description=self.search_case_by_reference(generalized_solutions.parent_description)
+            description=self.search_case_by_reference(solutions[generalized_solutions].parent_description)
             #if the matching case is a child, assign the parent reference
             if description.state == "child":
                 parent_description=self.search_parent_from_child_reference(description.link)
-                nested.parent_description = parent_description.link
+                solutions[generalized_solutions].parent_description = parent_description.link
             #If there are nested solutions
-            if len(generalized_solutions.nested_cases)>0:
-                for nested in generalized_solutions.nested_cases:         
-                    description=self.search_case_by_reference(nested.parent_description)
+            if len(solutions[generalized_solutions].nested_cases)>0:
+                for nested in range(0,len(solutions[generalized_solutions].nested_cases)):         
+                    description=self.search_case_by_reference(solutions[generalized_solutions].nested_cases[nested].parent_description)
                     #if the matching case is a child, assign the parent reference
                     if description.state == "child":
                         parent_description=self.search_parent_from_child_reference(description.link)
-                        nested.parent_description = parent_description.link
+                        solutions[generalized_solutions].nested_cases[nested].parent_description = parent_description.link
+        return solutions
                 
     def update_solutions_by_performance(self):
         #function only for solutions object
@@ -145,28 +146,25 @@ class Mod_CNN:
                     self.remove_with_id(generalized_solution.link)
                     self.store.append(new_parent)
                 
-def search_solutions_from_descriptions(sample,descriptions_store,solutions_store,weights,amount=5):
+def search_solutions_from_descriptions(sample,descriptions_store,solutions_store,weights_description,amount=5):
     #Retrieve most similar GC and take the GSs from that one if they are not enough,
     #take the next most similar and retrieve the rest
     #This is a function for description objects
     similar_GC=[]
     for generalized_case in descriptions_store:
-            similar_GC.append(tuple(generalized_case.link,CompareSimilarity(generalized_case.data,sample,weights,"description")))
+            similar_GC.append((generalized_case.link,CompareSimilarity(generalized_case.data,sample.data,weights_description,"description")))
     similar_GC = sorted(similar_GC, key=lambda x: x[1], reverse=True)
     list_solution=[]
-    while len(list_solution) < amount:
-        for most_similar in similar_GC:
-            for generalized_solution in solutions_store:
-                if generalized_solution.parent_description == most_similar[0]:
-                    list_solution.append(generalized_solution)
-        else:
-            print(most_similar)
-            print(solutions_store)
-            raise ValueError(f"Not enough solutions to retrieve")
-    return list_solution
+
+    for most_similar in similar_GC:
+        for generalized_solution in solutions_store:
+            if generalized_solution.parent_description == most_similar[0]:
+                list_solution.append(generalized_solution)
+                if len(list_solution) >= amount:
+                    return list_solution
 
 
-def compute_diversity(candidates, similarity_fn):
+def compute_diversity(candidates,weights):
     """
     Computes the diversity of a set of candidates based on pairwise similarities.
     
@@ -178,7 +176,10 @@ def compute_diversity(candidates, similarity_fn):
     if n < 2:
         return 0  # No diversity if there's only one or no candidate
     
-    diversity_sum = sum(
-        1 - similarity_fn(ci, cj) for i, ci in enumerate(candidates) for j, cj in enumerate(candidates) if i < j
+    total_dissimilarity = sum(
+        1 - CompareSimilarity(candidates[i], candidates[j],weights,"solution")
+        for i in range(n) for j in range(i + 1, n)
     )
-    return (2 / (n * (n - 1))) * diversity_sum
+    
+    total_comparisons = (n * (n - 1)) / 2  # Number of unique pairs
+    return total_dissimilarity / total_comparisons

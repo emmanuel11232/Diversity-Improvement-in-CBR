@@ -6,38 +6,22 @@ import numpy as np
 import math
 import sklearn
 import matplotlib.pyplot as plt
+import statistics
 
 import seaborn as sns # librerías para EDA visual
 
-#Nuevo
-from functools import reduce
-from sklearn.feature_extraction.text import CountVectorizer
-import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import OneHotEncoder
-import gensim.downloader as api
-from numpy import dot
-from numpy.linalg import norm
-import Levenshtein
-import random
-
-from Methods2 import CasoInd,Diversity,ModifiedCNN,SearchSimilarModCNN, DescriptionsAndSolutions
+from Methods2 import DescriptionsAndSolutions, CaseBase, CompareSimilarity, Description
+from Modified_Condensed_Nearest_Neighbors import search_solutions_from_descriptions, compute_diversity
+from Condensed_CaseBase_Generation import create_condensed_case_base
 from Methods import SearchSimilar
 #First I will set the original case base
 #Case Base comes from an Excel provided by the supervisor
 path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
 
-CaseBase=[]
-for i in range(0,len(df)):
-    Description=df.loc[i,['Task', 'Case study type', 'Case study', 'Online/Off-line', 'Input for the model']]
-    Solution=df.loc[i,['Model Approach', 'Model Type', 'Models', 'Data Pre-processing', 'Complementary notes', 'Publication identifier,,,,,,,,,,,,,,,,,,']] #Gotta fix this bug
-    Performance=df.loc[i,['Performance indicator', 'Performance', 'Publication Year']]
-    case=CasoInd(Description.values,Solution.values,Performance.values,i)
-    CaseBase.append(case)
 
 #Global variables
-CaseBase_Train=CaseBase #Set to modify with the modified CNN
+CaseBase_Train=CaseBase[40:] #Set to modify with the modified CNN
 CaseBase_Test=CaseBase[:40] #Set to make the queries
 shared_data = {}
 shared_data['Diversity_local'] = []
@@ -46,69 +30,53 @@ shared_data['Diversity_average'] = []
 shared_data['Diversity_local_Org'] = []
 shared_data['Diversity_average_Org'] = []
 
-def apply_algorithms(Threshold):
-    global shared_data
+def apply_CNN(threshold_description,threshold_solution):
+    solution_list,description_list=DescriptionsAndSolutions(CaseBase_Train)
+    weights_description_feature=[0.2,0.2,0.2,0.2,0.2]
+    weights_solution_feature=[0.25,0.25,0.25,0.25]
+
+    solutions_condensed,descriptions_condensed=create_condensed_case_base(description_list=description_list,
+                                                                          solution_list=solution_list,
+                                                                          weights_description_feature=weights_description_feature,
+                                                                          weights_solution_feature=weights_solution_feature,
+                                                                          threshold_description=threshold_description,
+                                                                          threshold_solution=threshold_solution)
     
-    DescriptionList,SolutionList=DescriptionsAndSolutions(CaseBase)
-    Nested_Descriptions,Nested_Solutions=ModifiedCNN(DescriptionList,SolutionList,[0.2,0.2,0.2,0.2,0.2],[0.2,0.2,0.2,0.2,0.2],Threshold,Threshold)
-    
-    shared_data['Nested_Descriptions'] = Nested_Descriptions
-    shared_data['Nested_Solutions'] = Nested_Solutions
+    return solutions_condensed,descriptions_condensed
 
-def save_data(values):
-    global shared_data
+def retrieval_for_ModCNN(solutions,descriptions,query):
+    retrievals = search_solutions_from_descriptions(sample=query,
+                                                    descriptions_store=descriptions,
+                                                    solutions_store=solutions,
+                                                    weights_description=[0.2,0.2,0.2,0.2,0.2])
+    list_retrievals_solutions=[]
+    for i in retrievals:
+        list_retrievals_solutions.append(i.data)
+    diversity=compute_diversity(list_retrievals_solutions,[0.25,0.25,0.25,0.25])
+    return diversity
 
-    Nested_Descriptions = shared_data.get('Nested_Descriptions', [])
-    Nested_Solutions = shared_data.get('Nested_Solutions', [])
- 
-    Weights= [0.2, 0.2, 0.2, 0.2, 0.2] 
-    NumberRetrievals=5
+diversity_matrix = []
 
-    ListRetrievals=SearchSimilarModCNN(values,Nested_Descriptions,Nested_Solutions,NumberRetrievals,Weights)
-
-    # Función para mostrar la información de los objetos en la GUI
-    Div=Diversity(ListRetrievals,Weights)
-    print("Diversidad de soluciones:", Div)
-    print(len(Nested_Descriptions),len(Nested_Solutions))
-    return Div
-
-def Original_diversity(values):
-    Weights= [0.2, 0.2, 0.2, 0.2, 0.2] 
-    ListRetrievals,ListSim=SearchSimilar(values,CaseBase,5,Weights)
-
-    # Función para mostrar la información de los objetos en la GUI
-    Div=Diversity(ListRetrievals,Weights)
-
-    return Div
-
-def Diversity_Calculations_Original():
-    global shared_data
-    Divs=[]
-    for i in range(0,40):
-        values=CaseBase_Test[i].description
-        Div=Original_diversity(values)
-        Divs.append(Div)
-    shared_data['Diversity_local_Org'] = Divs
-    shared_data['Diversity_average_Org'].append(np.mean(Divs))
-    print(f"Original Diversity: {np.mean(Divs)}")
-
-def Diversity_Calculations():
-    global shared_data
-    Thresholds=[0.4,0.5,0.6,0.7,0.8,0.9,0.95]
+Thresholds=[0.65,0.7,0.8,0.9,0.95]
+print("start")
+for i in Thresholds:
+    row_values = []
     for j in Thresholds:
-        apply_algorithms(j)
-        Divs=[]
-        for i in range(0,40):
-            values=CaseBase_Test[i].description
-            Div=save_data(values)
-            Divs.append(Div)
-        shared_data['Diversity_local'] = Divs
-        shared_data['Diversity_average'].append(np.mean(Divs))
-        print(f"Average Diversity: {np.mean(Divs)}")
+        solutions_condensed,descriptions_condensed=apply_CNN(i,j)
+        shared_data['Diversity_local']=[]
+        for case in CaseBase_Test:
+            query=Description(case.description,1)
+            diversity=retrieval_for_ModCNN(solutions_condensed,descriptions_condensed,query)
+            shared_data['Diversity_local'].append(diversity)
+        shared_data['Diversity_average'].append(statistics.mean(shared_data['Diversity_local']))
+        row_values.append(statistics.mean(shared_data['Diversity_local']))  # Store in matrix
+        
+    diversity_matrix.append(row_values)  # Add row to matrix
+
 
 def plot_diversity():
     global shared_data
-    Thresholds=[0.4,0.5,0.6,0.7,0.8,0.9,0.95]
+    Thresholds=[0.65,0.7,0.8,0.9,0.95]
     Divs=shared_data.get('Diversity_local', [])
     Divs_average=shared_data.get('Diversity_average', [])
     plt.plot(Thresholds,Divs_average)
@@ -118,6 +86,27 @@ def plot_diversity():
     plt.show()
     print(f"Average Diversity: {Divs_average}")
 
-Diversity_Calculations()
-Diversity_Calculations_Original()
-plot_diversity()
+
+# Convert to NumPy array
+diversity_matrix = np.array(diversity_matrix)
+
+# 🔹 Plot heatmap
+plt.figure(figsize=(8, 6))
+plt.imshow(diversity_matrix, cmap='coolwarm', interpolation='nearest')
+
+# Add color bar
+plt.colorbar(label='Diversity Score')
+
+# Label axes
+plt.xticks(range(len(Thresholds)), Thresholds)
+plt.yticks(range(len(Thresholds)), Thresholds)
+plt.xlabel("Threshold j")
+plt.ylabel("Threshold i")
+plt.title("Diversity Heatmap for Different Thresholds")
+
+# Show values in cells
+for i in range(len(Thresholds)):
+    for j in range(len(Thresholds)):
+        plt.text(j, i, f"{diversity_matrix[i, j]:.2f}", ha='center', va='center', color='black')
+
+plt.show()
