@@ -90,13 +90,13 @@ plt.figure(figsize=(8, 6))
 plt.imshow(diversity_matrix, cmap='coolwarm', interpolation='nearest')
 
 # Add color bar
-plt.colorbar(label='Diversity Score')
+plt.colorbar(label='Diversity')
 
 # Label axes
 plt.xticks(range(len(Thresholds)), Thresholds)
 plt.yticks(range(len(Thresholds)), Thresholds)
-plt.xlabel("Threshold j")
-plt.ylabel("Threshold i")
+plt.xlabel("Threshold descriptions")
+plt.ylabel("Threshold solutions")
 plt.title("Diversity Heatmap for Different Thresholds")
 
 # Show values in cells
