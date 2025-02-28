@@ -43,7 +43,7 @@ def clean_values(value):
     return value
 
 
-path = r"C:\Users\emman\Desktop\Performance_cleaned.xlsx"
+path = r"C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\Performance_cleaned.xlsx"
 df = pd.read_excel(path)
 Performance=df.loc[:,['Performance indicator', 'Performance', 'Publication Year']]
 Performance['Performance'] = Performance['Performance'].astype(str)

@@ -13,11 +13,6 @@ import seaborn as sns # librerías para EDA visual
 from Methods2 import DescriptionsAndSolutions, CaseBase, CompareSimilarity, Description
 from Modified_Condensed_Nearest_Neighbors import search_solutions_from_descriptions, compute_diversity
 from Condensed_CaseBase_Generation import create_condensed_case_base
-from Methods import SearchSimilar
-#First I will set the original case base
-#Case Base comes from an Excel provided by the supervisor
-path = r'C:\Users\emman\Documents\TEC\DLIG\Case Based Reasoning\CaseBase\CleanedDATA V12-05-2021.csv'
-df = pd.read_csv(path, sep=';', encoding='windows-1252')
 
 
 #Global variables
