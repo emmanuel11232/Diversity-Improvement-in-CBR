@@ -14,8 +14,8 @@ import random
 #word2vec_model = api.load("glove-wiki-gigaword-50")
 
 #Case Base comes from an Excel provided by the supervisor
-path = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\CleanedDATA V12-05-2021.csv'
-path_performance = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\Performance_normalized_averaged.xlsx'
+path = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\Datasets\CleanedDATA V12-05-2021.csv'
+path_performance = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\Datasets\performance_normalized_averaged.csv'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
 df_perf = pd.read_csv(path_performance, sep=',', encoding='windows-1252')
 #Each case will be represented by a structure which will have the solutions, descriptions and performance seperated
