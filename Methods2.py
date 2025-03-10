@@ -18,6 +18,7 @@ path = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\Datasets\Clea
 path_performance = r'C:\Users\emman\Documents\TEC\Diversity-Improvement-in-CBR\Datasets\performance_normalized_averaged.csv'
 df = pd.read_csv(path, sep=';', encoding='windows-1252')
 df_perf = pd.read_csv(path_performance, sep=',', encoding='windows-1252')
+
 #Each case will be represented by a structure which will have the solutions, descriptions and performance seperated
 class CasoInd:
     def __init__(self, Description, Solution, Performance,reference):
@@ -254,8 +255,8 @@ def CompareSimilarity(Sol1,Sol2,Weights,des_sol):
     #Returns the similarity for two given descriptions
     Sim=Similarity()
     if des_sol=="description":
-        Sim1=Sim.SimTask(Sol1,Sol2)
-        Sim2=Sim.SimCaseStudyType(Sol1,Sol2)
+        Sim1=Sim.SimTask(Sol1,Sol2) #Task
+        Sim2=Sim.SimCaseStudyType(Sol1,Sol2) #Case Study Type
         Sim3=Sim.Levenshtein(Sol1[2],Sol2[2])#Case Study
         Sim4=Sim.On_Offline(Sol1[3],Sol2[3])
         Sim5=Sim.Levenshtein(Sol1[4],Sol2[4]) #Input for the model

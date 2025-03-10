@@ -59,6 +59,7 @@ def create_condensed_case_base(description_list,
 
     return Solutions.store, Descriptions.store
 
+"""
 #Apply everything
 #Create the descriptions and solutions lists
 solution_list,description_list=DescriptionsAndSolutions(CaseBase)
@@ -75,6 +76,4 @@ solutions_condensed,descriptions_condensed=create_condensed_case_base(descriptio
                                                                       weights_solution_feature=weights_solution_feature,
                                                                       threshold_description=threshold_description,
                                                                       threshold_solution=threshold_solution)
-
-print(solutions_condensed)
-print(descriptions_condensed)
+"""
